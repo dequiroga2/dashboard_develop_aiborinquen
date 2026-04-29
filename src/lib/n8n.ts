@@ -69,7 +69,7 @@ export async function createN8nWorkflow(
     };
   } catch (err) {
     console.error("n8n create workflow exception:", err);
-    return null;
+    throw err;
   }
 }
 
@@ -87,7 +87,6 @@ function buildWorkflowTemplate(p: {
 
   return {
     name: demoName,
-    active: false,
     nodes: [
       /* ── 1. Webhook ── */
       {
