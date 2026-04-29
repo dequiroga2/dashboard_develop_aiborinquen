@@ -21,9 +21,12 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json();
   const { n8nApiKey } = body;
 
+  // Strip any accidental whitespace (copy-paste from n8n UI can introduce spaces)
+  const cleanKey = typeof n8nApiKey === "string" ? n8nApiKey.replace(/\s+/g, "") || null : undefined;
+
   const user = await prisma.user.update({
     where: { id: session.user.id },
-    data: { n8nApiKey: n8nApiKey ?? undefined },
+    data: { n8nApiKey: cleanKey },
     select: { id: true, name: true, email: true, role: true, n8nApiKey: true },
   });
 
