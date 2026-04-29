@@ -97,12 +97,9 @@ export default function ConversationPage() {
     setClearing(true);
     const res = await fetch(`/api/conversations/${id}/messages`, { method: "DELETE" });
     if (res.ok) {
-      const data = await res.json().catch(() => ({}));
       setMessages([]);
-      alert(`Historial eliminado: ${data.deleted ?? "?"} mensajes borrados de la base de datos.`);
     } else {
-      const err = await res.json().catch(() => ({}));
-      alert(`Error al limpiar historial: ${err.error || res.status}`);
+      alert("Error al limpiar el historial. Intenta de nuevo.");
     }
     setClearing(false);
   }
