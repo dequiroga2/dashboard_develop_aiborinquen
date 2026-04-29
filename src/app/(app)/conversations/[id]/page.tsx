@@ -95,8 +95,13 @@ export default function ConversationPage() {
   async function clearHistory() {
     if (!confirm("¿Eliminar todo el historial de esta conversación? Esta acción no se puede deshacer.")) return;
     setClearing(true);
-    await fetch(`/api/conversations/${id}/messages`, { method: "DELETE" });
-    setMessages([]);
+    const res = await fetch(`/api/conversations/${id}/messages`, { method: "DELETE" });
+    if (res.ok) {
+      setMessages([]);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(`Error al limpiar historial: ${err.error || res.status}`);
+    }
     setClearing(false);
   }
 
