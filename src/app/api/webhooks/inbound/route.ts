@@ -5,9 +5,10 @@ export const dynamic = "force-dynamic";
 
 // Meta webhook verification (GET)
 export async function GET(req: NextRequest) {
-  const mode = req.nextUrl.searchParams.get("hub.mode");
-  const token = req.nextUrl.searchParams.get("hub.verify_token");
-  const challenge = req.nextUrl.searchParams.get("hub.challenge");
+  const url = new URL(req.url);
+  const mode = url.searchParams.get("hub.mode");
+  const token = url.searchParams.get("hub.verify_token");
+  const challenge = url.searchParams.get("hub.challenge");
 
   const verifyToken = process.env.WEBHOOK_VERIFY_TOKEN || "demo-router-2024";
 
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(challenge, { status: 200 });
   }
 
-  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  return NextResponse.json({ error: "Forbidden", received: { mode, token, verifyToken } }, { status: 403 });
 }
 
 // Send reply via Meta WhatsApp API
