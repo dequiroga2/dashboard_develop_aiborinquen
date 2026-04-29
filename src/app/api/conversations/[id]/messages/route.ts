@@ -48,13 +48,15 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!conv) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
   if (!isAdmin(session) && conv.demo.userId !== session.user.id) return forbidden();
 
+  // Count before delete to confirm messages exist with this conversationId
+  const countBefore = await prisma.message.count({ where: { conversationId: params.id } });
   const deleted = await prisma.message.deleteMany({ where: { conversationId: params.id } });
   await prisma.conversation.update({
     where: { id: params.id },
     data: { lastMessage: null, lastMessageAt: null },
   });
 
-  return NextResponse.json({ ok: true, deleted: deleted.count });
+  return NextResponse.json({ ok: true, deleted: deleted.count, countBefore, conversationId: params.id });
 }
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
