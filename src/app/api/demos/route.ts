@@ -33,7 +33,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
 
-  // Verify client belongs to this user
   const client = await prisma.client.findUnique({ where: { id: parsed.data.clientId } });
   if (!client) return NextResponse.json({ error: "Cliente no encontrado" }, { status: 404 });
   if (!isAdmin(session) && client.userId !== session.user.id) {
@@ -42,7 +41,6 @@ export async function POST(req: NextRequest) {
 
   const { expiresAt, n8nWebhookUrl, ...rest } = parsed.data;
 
-  // Create demo
   const demo = await prisma.demo.create({
     data: {
       ...rest,
@@ -52,7 +50,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Auto-create n8n workflow if user has an API key configured and no webhook URL was provided manually
+  // Auto-create n8n workflow if user has API key and no manual webhook URL was provided
   if (!n8nWebhookUrl) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -61,27 +59,34 @@ export async function POST(req: NextRequest) {
 
     if (user?.n8nApiKey) {
       const n8nBaseUrl = process.env.N8N_BASE_URL || "https://aiborinquen.app.n8n.cloud";
-      const demoRouterUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || "";
+      const demoRouterUrl = (process.env.APP_URL || process.env.NEXTAUTH_URL || "").replace(/\/$/, "");
       const metaToken = process.env.META_ACCESS_TOKEN || "";
       const metaPhoneNumberId = process.env.META_PHONE_NUMBER_ID || "";
 
-      const result = await createN8nWorkflow({
-        clientSlug: slugify(client.name),
-        demoName: demo.name,
-        n8nApiKey: user.n8nApiKey,
-        n8nBaseUrl,
-        demoRouterUrl,
-        metaToken,
-        metaPhoneNumberId,
-      });
-
-      if (result) {
-        await prisma.demo.update({
-          where: { id: demo.id },
-          data: { n8nWebhookUrl: result.webhookUrl },
+      try {
+        const result = await createN8nWorkflow({
+          clientSlug: slugify(client.name),
+          demoName: demo.name,
+          n8nApiKey: user.n8nApiKey,
+          n8nBaseUrl,
+          demoRouterUrl,
+          metaToken,
+          metaPhoneNumberId,
         });
+
+        if (result) {
+          await prisma.demo.update({
+            where: { id: demo.id },
+            data: { n8nWebhookUrl: result.webhookUrl },
+          });
+          return NextResponse.json(
+            { ...demo, n8nWebhookUrl: result.webhookUrl, workflowCreated: true, workflowId: result.workflowId },
+            { status: 201 }
+          );
+        }
+      } catch (err: any) {
         return NextResponse.json(
-          { ...demo, n8nWebhookUrl: result.webhookUrl, workflowCreated: true, workflowId: result.workflowId },
+          { ...demo, workflowCreated: false, workflowError: err?.message ?? "Error al crear workflow en n8n" },
           { status: 201 }
         );
       }

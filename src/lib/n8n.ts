@@ -51,7 +51,7 @@ export async function createN8nWorkflow(
     if (!createRes.ok) {
       const err = await createRes.text();
       console.error("n8n create workflow error:", createRes.status, err);
-      return null;
+      throw new Error(`n8n ${createRes.status}: ${err}`);
     }
 
     const created = await createRes.json();
