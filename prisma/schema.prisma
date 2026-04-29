@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DEVELOPER
+}
+
+enum Channel {
+  whatsapp
+  sms
+  both
+}
+
+enum Provider {
+  twilio
+  meta
+  ycloud
+  other
+}
+
+enum DemoStatus {
+  active
+  inactive
+}
+
+enum TesterRole {
+  client
+  tester
+  internal
+}
+
+enum ConversationStatus {
+  open
+  closed
+  blocked
+}
+
+enum MessageDirection {
+  inbound
+  outbound
+}
+
+enum SenderType {
+  user
+  bot
+  system
+}
+
+enum WebhookLogStatus {
+  success
+  error
+  unauthorized
+  inactive_demo
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(DEVELOPER)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  clients Client[]
+  demos   Demo[]
+
+  @@map("users")
+}
+
+model Client {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  name         String
+  companyName  String?  @map("company_name")
+  contactName  String?  @map("contact_name")
+  contactPhone String?  @map("contact_phone")
+  contactEmail String?  @map("contact_email")
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user  User   @relation(fields: [userId], references: [id])
+  demos Demo[]
+
+  @@map("clients")
+}
+
+model Demo {
+  id              String     @id @default(cuid())
+  clientId        String     @map("client_id")
+  userId          String     @map("user_id")
+  name            String
+  botName         String     @map("bot_name")
+  channel         Channel    @default(whatsapp)
+  provider        Provider   @default(twilio)
+  n8nWebhookUrl   String?    @map("n8n_webhook_url")
+  status          DemoStatus @default(inactive)
+  allowPhoneReuse Boolean    @default(false) @map("allow_phone_reuse")
+  expiresAt       DateTime?  @map("expires_at")
+  internalNotes   String?    @map("internal_notes")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  client        Client             @relation(fields: [clientId], references: [id])
+  user          User               @relation(fields: [userId], references: [id])
+  testers       AuthorizedTester[]
+  conversations Conversation[]
+  webhookLogs   WebhookLog[]
+
+  @@map("demos")
+}
+
+model AuthorizedTester {
+  id              String     @id @default(cuid())
+  demoId          String     @map("demo_id")
+  name            String
+  phone           String
+  normalizedPhone String     @map("normalized_phone")
+  role            TesterRole @default(tester)
+  active          Boolean    @default(true)
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  demo          Demo           @relation(fields: [demoId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  @@map("authorized_testers")
+}
+
+model Conversation {
+  id            String             @id @default(cuid())
+  demoId        String             @map("demo_id")
+  testerId      String             @map("tester_id")
+  phone         String
+  channel       Channel            @default(whatsapp)
+  status        ConversationStatus @default(open)
+  lastMessage   String?            @map("last_message")
+  lastMessageAt DateTime?          @map("last_message_at")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  demo        Demo               @relation(fields: [demoId], references: [id])
+  tester      AuthorizedTester   @relation(fields: [testerId], references: [id])
+  messages    Message[]
+  webhookLogs WebhookLog[]
+
+  @@unique([demoId, testerId, phone, channel])
+  @@map("conversations")
+}
+
+model Message {
+  id             String           @id @default(cuid())
+  conversationId String           @map("conversation_id")
+  demoId         String           @map("demo_id")
+  direction      MessageDirection
+  senderType     SenderType       @default(user) @map("sender_type")
+  content        String
+  rawPayload     Json?            @map("raw_payload")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+
+  @@map("messages")
+}
+
+model WebhookLog {
+  id                String           @id @default(cuid())
+  demoId            String?          @map("demo_id")
+  conversationId    String?          @map("conversation_id")
+  provider          String
+  inboundPayload    Json             @map("inbound_payload")
+  normalizedPayload Json?            @map("normalized_payload")
+  n8nPayload        Json?            @map("n8n_payload")
+  n8nResponse       Json?            @map("n8n_response")
+  status            WebhookLogStatus
+  errorMessage      String?          @map("error_message")
+  responseTimeMs    Int?             @map("response_time_ms")
+  createdAt         DateTime         @default(now()) @map("created_at")
+
+  demo         Demo?         @relation(fields: [demoId], references: [id])
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+
+  @@map("webhook_logs")
+}
