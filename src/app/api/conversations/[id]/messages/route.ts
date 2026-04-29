@@ -51,6 +51,10 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     const countBefore = await prisma.message.count({ where: { conversationId: params.id } });
     const deleted = await prisma.message.deleteMany({ where: { conversationId: params.id } });
+
+    // Also clear n8n chat memory (n8n_chat_histories uses conversation_id as session_id)
+    await prisma.$executeRaw`DELETE FROM n8n_chat_histories WHERE session_id = ${params.id}`;
+
     await prisma.conversation.update({
       where: { id: params.id },
       data: { lastMessage: null, lastMessageAt: null },
