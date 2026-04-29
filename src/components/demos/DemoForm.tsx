@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Input, Textarea, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Plus, X } from "lucide-react";
 
 interface Props {
   initial?: any;
@@ -17,7 +18,7 @@ export function DemoForm({ initial, initialClientId, onSaved, onCancel }: Props)
     name: initial?.name || "",
     botName: initial?.botName || "",
     channel: initial?.channel || "whatsapp",
-    provider: initial?.provider || "twilio",
+    provider: initial?.provider || "meta",
     n8nWebhookUrl: initial?.n8nWebhookUrl || "",
     status: initial?.status || "inactive",
     allowPhoneReuse: initial?.allowPhoneReuse || false,
@@ -27,14 +28,45 @@ export function DemoForm({ initial, initialClientId, onSaved, onCancel }: Props)
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Inline client creation state
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [clientForm, setClientForm] = useState({ name: "", companyName: "" });
+  const [savingClient, setSavingClient] = useState(false);
+  const [clientError, setClientError] = useState("");
+
   useEffect(() => {
-    fetch("/api/clients")
-      .then((r) => r.json())
-      .then((data) => setClients(data));
+    loadClients();
   }, []);
+
+  async function loadClients() {
+    const data = await fetch("/api/clients").then((r) => r.json());
+    setClients(data);
+  }
 
   function set(field: string, value: any) {
     setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function createClient() {
+    if (!clientForm.name.trim()) { setClientError("El nombre es requerido"); return; }
+    setSavingClient(true);
+    setClientError("");
+    const res = await fetch("/api/clients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: clientForm.name.trim(), companyName: clientForm.companyName.trim() || undefined }),
+    });
+    setSavingClient(false);
+    if (!res.ok) {
+      const d = await res.json();
+      setClientError(typeof d.error === "string" ? d.error : "Error al crear cliente");
+      return;
+    }
+    const newClient = await res.json();
+    await loadClients();
+    set("clientId", newClient.id);
+    setShowNewClient(false);
+    setClientForm({ name: "", companyName: "" });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -63,6 +95,14 @@ export function DemoForm({ initial, initialClientId, onSaved, onCancel }: Props)
       return;
     }
 
+    const result = await res.json();
+    if (result.workflowError) {
+      setError(`Demo creada, pero el workflow de n8n falló: ${result.workflowError}`);
+      // Still call onSaved since the demo was created
+      setTimeout(onSaved, 3000);
+      return;
+    }
+
     onSaved();
   }
 
@@ -73,13 +113,57 @@ export function DemoForm({ initial, initialClientId, onSaved, onCancel }: Props)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Select
-        label="Cliente *"
-        value={form.clientId}
-        onChange={(e) => set("clientId", e.target.value)}
-        options={clientOptions}
-        required
-      />
+
+      {/* Client selector + inline create */}
+      <div className="space-y-2">
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <Select
+              label="Cliente *"
+              value={form.clientId}
+              onChange={(e) => set("clientId", e.target.value)}
+              options={clientOptions}
+              required
+            />
+          </div>
+          {!initial && (
+            <button
+              type="button"
+              onClick={() => { setShowNewClient(!showNewClient); setClientError(""); }}
+              className="mb-0.5 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 whitespace-nowrap border border-blue-200 rounded-lg px-3 py-2 hover:bg-blue-50 transition-colors"
+            >
+              {showNewClient ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+              {showNewClient ? "Cancelar" : "Nuevo cliente"}
+            </button>
+          )}
+        </div>
+
+        {showNewClient && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+            <p className="text-xs font-semibold text-blue-800">Crear cliente rápido</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Nombre *"
+                value={clientForm.name}
+                onChange={(e) => setClientForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="David Corp"
+                required
+              />
+              <Input
+                label="Empresa (opcional)"
+                value={clientForm.companyName}
+                onChange={(e) => setClientForm((f) => ({ ...f, companyName: e.target.value }))}
+                placeholder="David Corp S.A.S"
+              />
+            </div>
+            {clientError && <p className="text-xs text-red-600">{clientError}</p>}
+            <Button type="button" size="sm" loading={savingClient} onClick={createClient}>
+              Crear y seleccionar
+            </Button>
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <Input
           label="Nombre de la demo *"
@@ -112,8 +196,8 @@ export function DemoForm({ initial, initialClientId, onSaved, onCancel }: Props)
           value={form.provider}
           onChange={(e) => set("provider", e.target.value)}
           options={[
-            { value: "twilio", label: "Twilio" },
             { value: "meta", label: "Meta" },
+            { value: "twilio", label: "Twilio" },
             { value: "ycloud", label: "YCloud" },
             { value: "other", label: "Otro" },
           ]}
@@ -124,8 +208,8 @@ export function DemoForm({ initial, initialClientId, onSaved, onCancel }: Props)
         type="url"
         value={form.n8nWebhookUrl}
         onChange={(e) => set("n8nWebhookUrl", e.target.value)}
-        placeholder="https://n8n.tudominio.com/webhook/..."
-        hint="URL del webhook de n8n que recibirá los mensajes"
+        placeholder="Se genera automáticamente si tienes API key configurada"
+        hint="Déjalo vacío para auto-generar el workflow. Solo llénalo si quieres apuntar a un workflow existente."
       />
       <div className="grid grid-cols-2 gap-3">
         <Select

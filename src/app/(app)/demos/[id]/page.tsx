@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Select } from "@/components/ui/Input";
 import { DemoForm } from "@/components/demos/DemoForm";
-import { ArrowLeft, Plus, Pencil, Trash2, Power, MessageSquare } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Power, MessageSquare, LogOut } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { normalizePhone } from "@/lib/normalize";
 
@@ -18,6 +18,7 @@ export default function DemoDetailPage() {
   const [demo, setDemo] = useState<any>(null);
   const [testers, setTesters] = useState<any[]>([]);
   const [showEdit, setShowEdit] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [showAddTester, setShowAddTester] = useState(false);
   const [editTester, setEditTester] = useState<any>(null);
   const [testerForm, setTesterForm] = useState({ name: "", phone: "", role: "tester" });
@@ -35,6 +36,18 @@ export default function DemoDetailPage() {
   }
 
   useEffect(() => { load(); }, [id]);
+
+  async function deleteDemo() {
+    if (!confirm(`¿Eliminar la demo "${demo.name}"? Se borrarán todas sus conversaciones, mensajes y testers. Esta acción no se puede deshacer.`)) return;
+    setDeleting(true);
+    const res = await fetch(`/api/demos/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/demos");
+    } else {
+      alert("Error al eliminar la demo.");
+      setDeleting(false);
+    }
+  }
 
   async function toggleStatus() {
     const newStatus = demo.status === "active" ? "inactive" : "active";
@@ -119,6 +132,9 @@ export default function DemoDetailPage() {
             >
               <Power className="w-4 h-4" />
               {demo.status === "active" ? "Desactivar" : "Activar"}
+            </Button>
+            <Button variant="danger" size="sm" onClick={deleteDemo} loading={deleting}>
+              <Trash2 className="w-4 h-4" /> Eliminar
             </Button>
           </div>
         }
