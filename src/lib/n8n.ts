@@ -531,7 +531,23 @@ return [{
           promptType: "define",
           text: "={{ $json.mensaje }}",
           hasOutputParser: true,
-          options: { systemMessage: "" },
+          options: {
+            systemMessage: `### Reglas de formato
+Tu respuesta debe ser un JSON con la siguiente estructura:
+{
+  "mensaje": "Texto general de atencion al cliente SIN URL NI ARCHIVOS",
+  "archivos": [
+    {
+      "url": "ID del archivo",
+      "descripcion": "Descripción breve y simplificada del archivo basada en la descripción del archivo en Google Drive"
+    }
+  ]
+}
+
+Responde ÚNICAMENTE en formato JSON. No incluyas explicaciones, introducciones ni bloques de código markdown (\`\`\`json). Tu respuesta debe empezar con '{' y terminar con '}'.
+
+MUY IMPORTANTE, en el "mensaje" nunca debes incluir links ni urls, NUNCA. Solo debe haber texto`,
+          },
         },
         type: "@n8n/n8n-nodes-langchain.agent",
         typeVersion: 3,
@@ -575,7 +591,7 @@ return [{
       /* ── 28. Structured Output Parser ── */
       {
         parameters: {
-          jsonSchemaExample: JSON.stringify({ mensaje: "Texto de respuesta al cliente sin URLs", imagenes: [{ url: "URL o ID del archivo", descripcion: "Descripción breve" }] }),
+          jsonSchemaExample: JSON.stringify({ mensaje: "Texto general de atencion al cliente SIN URL NI IMAGENES", archivos: [{ url: "URL de la imagen o archivo", descripcion: "Descripción breve y simplificada de la image o archivo basada en la descripción del archivo en Google Drive" }] }),
           autoFix: true,
         },
         type: "@n8n/n8n-nodes-langchain.outputParserStructured",
