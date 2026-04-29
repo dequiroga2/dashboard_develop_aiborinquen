@@ -48,13 +48,13 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!conv) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
   if (!isAdmin(session) && conv.demo.userId !== session.user.id) return forbidden();
 
-  await prisma.message.deleteMany({ where: { conversationId: params.id } });
+  const deleted = await prisma.message.deleteMany({ where: { conversationId: params.id } });
   await prisma.conversation.update({
     where: { id: params.id },
     data: { lastMessage: null, lastMessageAt: null },
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, deleted: deleted.count });
 }
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
