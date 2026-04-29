@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { StatusBadge } from "@/components/ui/Badge";
 import { Users, Bot, MessageSquare, AlertTriangle, CheckCircle } from "lucide-react";
@@ -99,7 +100,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-3">
                   {data.recentConversations.map((c: any) => (
-                    <div key={c.id} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
+                    <Link key={c.id} href={`/conversations/${c.id}`} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-2 px-2 rounded-lg transition-colors">
                       <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                         <span className="text-xs font-semibold text-blue-700">
                           {c.tester?.name?.[0]?.toUpperCase() || "?"}
@@ -118,7 +119,7 @@ export default function DashboardPage() {
                       <p className="text-xs text-gray-400 flex-shrink-0">
                         {c.lastMessageAt ? formatDateTime(c.lastMessageAt) : ""}
                       </p>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -134,7 +135,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-3">
                   {data.recentErrors.map((log: any) => (
-                    <div key={log.id} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
+                    <Link key={log.id} href="/logs" className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-2 px-2 rounded-lg transition-colors">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <StatusBadge status={log.status} />
@@ -147,7 +148,7 @@ export default function DashboardPage() {
                       <p className="text-xs text-gray-400 flex-shrink-0">
                         {formatDateTime(log.createdAt)}
                       </p>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}

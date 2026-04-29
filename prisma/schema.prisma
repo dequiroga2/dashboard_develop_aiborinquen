@@ -67,6 +67,7 @@ model User {
   passwordHash String   @map("password_hash")
   role         Role     @default(DEVELOPER)
   active       Boolean  @default(true)
+  n8nApiKey    String?  @map("n8n_api_key")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

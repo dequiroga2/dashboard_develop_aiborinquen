@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRequiredSession, unauthorized, isAdmin } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { demoCreateSchema } from "@/schemas/demo.schema";
+import { createN8nWorkflow, slugify } from "@/lib/n8n";
 
 export async function GET() {
   const session = await getRequiredSession();
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
 
   const { expiresAt, n8nWebhookUrl, ...rest } = parsed.data;
 
+  // Create demo
   const demo = await prisma.demo.create({
     data: {
       ...rest,
@@ -49,6 +51,42 @@ export async function POST(req: NextRequest) {
       expiresAt: expiresAt ? new Date(expiresAt) : null,
     },
   });
+
+  // Auto-create n8n workflow if user has an API key configured and no webhook URL was provided manually
+  if (!n8nWebhookUrl) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { n8nApiKey: true },
+    });
+
+    if (user?.n8nApiKey) {
+      const n8nBaseUrl = process.env.N8N_BASE_URL || "https://aiborinquen.app.n8n.cloud";
+      const demoRouterUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || "";
+      const metaToken = process.env.META_ACCESS_TOKEN || "";
+      const metaPhoneNumberId = process.env.META_PHONE_NUMBER_ID || "";
+
+      const result = await createN8nWorkflow({
+        clientSlug: slugify(client.name),
+        demoName: demo.name,
+        n8nApiKey: user.n8nApiKey,
+        n8nBaseUrl,
+        demoRouterUrl,
+        metaToken,
+        metaPhoneNumberId,
+      });
+
+      if (result) {
+        await prisma.demo.update({
+          where: { id: demo.id },
+          data: { n8nWebhookUrl: result.webhookUrl },
+        });
+        return NextResponse.json(
+          { ...demo, n8nWebhookUrl: result.webhookUrl, workflowCreated: true, workflowId: result.workflowId },
+          { status: 201 }
+        );
+      }
+    }
+  }
 
   return NextResponse.json(demo, { status: 201 });
 }
