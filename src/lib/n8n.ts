@@ -629,16 +629,14 @@ MUY IMPORTANTE, en el "mensaje" nunca debes incluir links ni urls, NUNCA. Solo d
         name: "Edit Fields1",
       },
 
-      /* ── 31. HTTP Request12 (enviar texto a Meta) ── */
+      /* ── 31. HTTP Request12 (enviar texto via Demo Router /send) ── */
       {
         parameters: {
           method: "POST",
-          url: metaMessagesUrl,
-          sendHeaders: true,
-          headerParameters: { parameters: [{ name: "Authorization", value: authHeader }] },
+          url: `=${demoRouterUrl}/api/conversations/{{ $('Code in JavaScript').item.json.conversation_id }}/send`,
           sendBody: true,
           specifyBody: "json",
-          jsonBody: `={{ JSON.stringify({\n  messaging_product: "whatsapp",\n  to: $('Code in JavaScript').item.json.fromNormalized,\n  type: "text",\n  text: { body: $json.output.mensaje }\n}) }}`,
+          jsonBody: `={{ JSON.stringify({ content: $json.output.mensaje }) }}`,
           options: {},
         },
         type: "n8n-nodes-base.httpRequest",
@@ -665,16 +663,14 @@ MUY IMPORTANTE, en el "mensaje" nunca debes incluir links ni urls, NUNCA. Solo d
         name: "HTTP Request15",
       },
 
-      /* ── 33. HTTP Request (enviar error a Meta) ── */
+      /* ── 33. HTTP Request (enviar error via Demo Router /send) ── */
       {
         parameters: {
           method: "POST",
-          url: metaMessagesUrl,
-          sendHeaders: true,
-          headerParameters: { parameters: [{ name: "Authorization", value: authHeader }] },
+          url: `=${demoRouterUrl}/api/conversations/{{ $('Code in JavaScript').item.json.conversation_id }}/send`,
           sendBody: true,
           specifyBody: "json",
-          jsonBody: `={\n  "messaging_product": "whatsapp",\n  "to": "{{ $('Code in JavaScript').item.json.fromNormalized }}",\n  "type": "text",\n  "text": {\n    "body": "{{ $json.mensaje }}"\n  }\n}`,
+          jsonBody: `={{ JSON.stringify({ content: $json.mensaje }) }}`,
           options: {},
         },
         type: "n8n-nodes-base.httpRequest",
@@ -684,9 +680,9 @@ MUY IMPORTANTE, en el "mensaje" nunca debes incluir links ni urls, NUNCA. Solo d
         name: "HTTP Request",
       },
 
-      /* ── 34. Split Out1 (separar imágenes del output) ── */
+      /* ── 34. Split Out1 (separar archivos del output) ── */
       {
-        parameters: { fieldToSplitOut: "output.imagenes", options: {} },
+        parameters: { fieldToSplitOut: "output.archivos", options: {} },
         type: "n8n-nodes-base.splitOut",
         typeVersion: 1,
         position: [6720, 1008],
@@ -887,7 +883,7 @@ MUY IMPORTANTE, en el "mensaje" nunca debes incluir links ni urls, NUNCA. Solo d
       "Postgres Chat Memory":   { ai_memory:        [[{ node: "AI Agent",                type: "ai_memory",        index: 0 }]] },
       "Structured Output Parser": { ai_outputParser: [[{ node: "AI Agent",               type: "ai_outputParser",  index: 0 }]] },
       "OpenAI Chat Model1":     { ai_languageModel: [[{ node: "Structured Output Parser", type: "ai_languageModel", index: 0 }]] },
-      "HTTP Request12":         { main: [[{ node: "HTTP Request15",  type: "main", index: 0 }]] },
+      "HTTP Request12":         { main: [[]] },
       "Edit Fields1":           { main: [[{ node: "HTTP Request",    type: "main", index: 0 }]] },
       "Split Out1":             { main: [[{ node: "Download file",   type: "main", index: 0 }]] },
       "Download file":          { main: [[{ node: "Switch2",         type: "main", index: 0 }]] },
