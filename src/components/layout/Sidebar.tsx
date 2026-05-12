@@ -13,12 +13,14 @@ import {
   UserCog,
   Zap,
   CircleUser,
+  UserCheck,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/clients", label: "Clientes", icon: Users },
   { href: "/demos", label: "Demos", icon: Bot },
+  { href: "/testers", label: "Testers", icon: UserCheck },
   { href: "/conversations", label: "Conversaciones", icon: MessageSquare },
   { href: "/logs", label: "Logs", icon: ScrollText },
   { href: "/integration", label: "Integración", icon: Settings },
