@@ -89,7 +89,12 @@ export default function DemoDetailPage() {
 
   async function deleteTester(testerId: string) {
     if (!confirm("¿Eliminar este tester?")) return;
-    await fetch(`/api/testers/${testerId}`, { method: "DELETE" });
+    const res = await fetch(`/api/testers/${testerId}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Error al eliminar el tester.");
+      return;
+    }
     load();
   }
 
