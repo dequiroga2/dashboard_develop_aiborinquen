@@ -197,6 +197,7 @@ export function DemoForm({ initial, initialClientId, onSaved, onCancel }: Props)
           onChange={(e) => set("provider", e.target.value)}
           options={[
             { value: "meta", label: "Meta" },
+            { value: "twilio", label: "Twilio" },
           ]}
         />
       </div>
