@@ -697,7 +697,7 @@ MUY IMPORTANTE, en el "mensaje" nunca debes incluir links ni urls, NUNCA. Solo d
           url: `=${demoRouterUrl}/api/conversations/{{ $('Code in JavaScript').item.json.conversation_id }}/send`,
           sendBody: true,
           specifyBody: "json",
-          jsonBody: `={{ JSON.stringify({\n  content: $json.descripcion,\n  mediaUrl: "https://drive.google.com/uc?export=download&id=" + $json.url,\n  mediaType: $json.mimeType ?? null\n}) }}`,
+          jsonBody: `={{ JSON.stringify({\n  content: $json.descripcion,\n  mediaUrl: "https://drive.usercontent.google.com/download?id=" + $json.url + "&export=download&confirm=t",\n  mediaType: $json.mimeType ?? null\n}) }}`,
           options: {},
         },
         type: "n8n-nodes-base.httpRequest",
