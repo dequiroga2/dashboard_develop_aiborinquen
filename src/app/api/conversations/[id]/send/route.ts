@@ -122,9 +122,15 @@ async function sendViaTwilio(phone: string, text: string, mediaUrl?: string) {
   // Twilio fetches the file directly from the public URL (e.g. Google Drive)
   if (mediaUrl) params.MediaUrl0 = mediaUrl;
 
-  await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+  const twilioRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded", Authorization: `Basic ${auth}` },
     body: new URLSearchParams(params).toString(),
   });
+  const twilioBody = await twilioRes.json().catch(() => null);
+  if (!twilioRes.ok) {
+    console.error("[Twilio] send failed:", twilioRes.status, JSON.stringify(twilioBody));
+  } else {
+    console.log("[Twilio] sent OK — sid:", twilioBody?.sid, "| mediaUrl:", mediaUrl ?? "none");
+  }
 }
