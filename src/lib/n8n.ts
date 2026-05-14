@@ -690,21 +690,57 @@ MUY IMPORTANTE, en el "mensaje" nunca debes incluir links ni urls, NUNCA. Solo d
         name: "Split Out1",
       },
 
-      /* ── 35. HTTP Request Media (enviar archivo via Demo Router /send) ── */
+      /* ── 35. Download file (Google Drive → binary) ── */
+      {
+        parameters: {
+          operation: "download",
+          fileId: { __rl: true, value: "={{ $json.url }}", mode: "id" },
+          options: {},
+        },
+        type: "n8n-nodes-base.googleDrive",
+        typeVersion: 3,
+        position: [6928, 1008],
+        id: "11111111-0035-0035-0035-000000000035",
+        name: "Download file",
+        credentials: { googleDriveOAuth2Api: { id: "sb5c5uf9Yuwh4rf6", name: "Google Drive account" } },
+      },
+
+      /* ── 36. HTTP Request Upload (subir a Supabase → URL pública) ── */
+      {
+        parameters: {
+          method: "POST",
+          url: `${demoRouterUrl}/api/media/upload`,
+          sendBody: true,
+          contentType: "multipart-form-data",
+          bodyParameters: {
+            parameters: [
+              { parameterType: "formBinaryData", name: "file", inputDataFieldName: "data" },
+            ],
+          },
+          options: {},
+        },
+        type: "n8n-nodes-base.httpRequest",
+        typeVersion: 4.3,
+        position: [7136, 1008],
+        id: "11111111-0036-0036-0036-000000000036",
+        name: "HTTP Request Upload",
+      },
+
+      /* ── 37. HTTP Request Send (enviar archivo via Demo Router /send) ── */
       {
         parameters: {
           method: "POST",
           url: `=${demoRouterUrl}/api/conversations/{{ $('Code in JavaScript').item.json.conversation_id }}/send`,
           sendBody: true,
           specifyBody: "json",
-          jsonBody: `={{ JSON.stringify({\n  content: $json.descripcion,\n  mediaUrl: "https://drive.usercontent.google.com/download?id=" + $json.url + "&export=download&confirm=t",\n  mediaType: $json.mimeType ?? null\n}) }}`,
+          jsonBody: `={{ JSON.stringify({ content: $('Split Out1').item.json.descripcion, mediaUrl: $json.url }) }}`,
           options: {},
         },
         type: "n8n-nodes-base.httpRequest",
         typeVersion: 4.3,
-        position: [6928, 1008],
-        id: "11111111-0035-0035-0035-000000000035",
-        name: "HTTP Request Media",
+        position: [7344, 1008],
+        id: "11111111-0037-0037-0037-000000000037",
+        name: "HTTP Request Send",
       },
     ],
 
@@ -760,7 +796,9 @@ MUY IMPORTANTE, en el "mensaje" nunca debes incluir links ni urls, NUNCA. Solo d
       "OpenAI Chat Model1":     { ai_languageModel: [[{ node: "Structured Output Parser", type: "ai_languageModel", index: 0 }]] },
       "HTTP Request12":         { main: [[]] },
       "Edit Fields1":           { main: [[{ node: "HTTP Request",    type: "main", index: 0 }]] },
-      "Split Out1":             { main: [[{ node: "HTTP Request Media", type: "main", index: 0 }]] },
+      "Split Out1":             { main: [[{ node: "Download file",       type: "main", index: 0 }]] },
+      "Download file":          { main: [[{ node: "HTTP Request Upload", type: "main", index: 0 }]] },
+      "HTTP Request Upload":    { main: [[{ node: "HTTP Request Send",   type: "main", index: 0 }]] },
     },
 
     settings: { executionOrder: "v1" },
