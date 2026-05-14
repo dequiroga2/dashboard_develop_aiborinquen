@@ -690,146 +690,21 @@ MUY IMPORTANTE, en el "mensaje" nunca debes incluir links ni urls, NUNCA. Solo d
         name: "Split Out1",
       },
 
-      /* ── 35. Download file (Google Drive) ── */
+      /* ── 35. HTTP Request Media (enviar archivo via Demo Router /send) ── */
       {
         parameters: {
-          operation: "download",
-          fileId: { __rl: true, value: "={{ $json.url }}", mode: "url" },
+          method: "POST",
+          url: `=${demoRouterUrl}/api/conversations/{{ $('Code in JavaScript').item.json.conversation_id }}/send`,
+          sendBody: true,
+          specifyBody: "json",
+          jsonBody: `={{ JSON.stringify({\n  content: $json.descripcion,\n  mediaUrl: "https://drive.google.com/uc?export=download&id=" + $json.url,\n  mediaType: $json.mimeType ?? null\n}) }}`,
           options: {},
         },
-        type: "n8n-nodes-base.googleDrive",
-        typeVersion: 3,
+        type: "n8n-nodes-base.httpRequest",
+        typeVersion: 4.3,
         position: [6928, 1008],
         id: "11111111-0035-0035-0035-000000000035",
-        name: "Download file",
-        credentials: { googleDriveOAuth2Api: { id: "sb5c5uf9Yuwh4rf6", name: "Google Drive account" } },
-      },
-
-      /* ── 36. Switch2 (imagen vs documento) ── */
-      {
-        parameters: {
-          rules: {
-            values: [
-              {
-                conditions: {
-                  options: { caseSensitive: true, leftValue: "", typeValidation: "strict", version: 3 },
-                  conditions: [{ leftValue: "={{ $json.mimeType }}", rightValue: "image", operator: { type: "string", operation: "contains" }, id: "k1" }],
-                  combinator: "and",
-                },
-                renameOutput: true, outputKey: "Imagen",
-              },
-            ],
-          },
-          options: { fallbackOutput: "extra" },
-        },
-        type: "n8n-nodes-base.switch",
-        typeVersion: 3.4,
-        position: [7120, 1008],
-        id: "11111111-0036-0036-0036-000000000036",
-        name: "Switch2",
-      },
-
-      /* ── 37. Edit Image (redimensionar) ── */
-      {
-        parameters: {
-          operation: "resize",
-          width: 1024,
-          height: 5000,
-          options: { format: "jpeg", quality: 90 },
-        },
-        type: "n8n-nodes-base.editImage",
-        typeVersion: 1,
-        position: [7328, 912],
-        id: "11111111-0037-0037-0037-000000000037",
-        name: "Edit Image",
-      },
-
-      /* ── 38. HTTP Request5 (subir imagen a Meta) ── */
-      {
-        parameters: {
-          method: "POST",
-          url: metaMediaUrl,
-          sendHeaders: true,
-          headerParameters: { parameters: [{ name: "Authorization", value: authHeader }] },
-          sendBody: true,
-          contentType: "multipart-form-data",
-          bodyParameters: {
-            parameters: [
-              { name: "messaging_product", value: "whatsapp" },
-              { name: "type", value: "image/jpeg" },
-              { parameterType: "formBinaryData", name: "file", inputDataFieldName: "data" },
-            ],
-          },
-          options: {},
-        },
-        type: "n8n-nodes-base.httpRequest",
-        typeVersion: 4.3,
-        position: [7520, 912],
-        id: "11111111-0038-0038-0038-000000000038",
-        name: "HTTP Request5",
-      },
-
-      /* ── 39. HTTP Request3 (enviar imagen a usuario) ── */
-      {
-        parameters: {
-          method: "POST",
-          url: metaMessagesUrl,
-          sendHeaders: true,
-          headerParameters: { parameters: [{ name: "Authorization", value: authHeader }] },
-          sendBody: true,
-          specifyBody: "json",
-          jsonBody: `={\n  "messaging_product": "whatsapp",\n  "to": "{{ $('Normalizador').item.json.fromE164.replace('+', '') }}",\n  "type": "image",\n  "image": {\n    "id": "{{ $json.id }}"\n  }\n}`,
-          options: {},
-        },
-        type: "n8n-nodes-base.httpRequest",
-        typeVersion: 4.3,
-        position: [7728, 912],
-        id: "11111111-0039-0039-0039-000000000039",
-        name: "HTTP Request3",
-      },
-
-      /* ── 40. HTTP Request10 (subir documento a Meta) ── */
-      {
-        parameters: {
-          method: "POST",
-          url: metaMediaUrl,
-          sendHeaders: true,
-          headerParameters: { parameters: [{ name: "Authorization", value: authHeader }] },
-          sendBody: true,
-          contentType: "multipart-form-data",
-          bodyParameters: {
-            parameters: [
-              { name: "messaging_product", value: "whatsapp" },
-              { name: "type", value: "={{ $json.mimeType }}" },
-              { parameterType: "formBinaryData", name: "file", inputDataFieldName: "data" },
-            ],
-          },
-          options: {},
-        },
-        type: "n8n-nodes-base.httpRequest",
-        typeVersion: 4.3,
-        position: [7328, 1088],
-        id: "11111111-0040-0040-0040-000000000040",
-        name: "HTTP Request10",
-      },
-
-      /* ── 41. HTTP Request11 (enviar documento a usuario) ── */
-      {
-        parameters: {
-          method: "POST",
-          url: metaMessagesUrl,
-          sendHeaders: true,
-          headerParameters: { parameters: [{ name: "Authorization", value: authHeader }] },
-          sendBody: true,
-          specifyBody: "json",
-          jsonBody: `={\n  "messaging_product": "whatsapp",\n  "to": "{{ $('Normalizador').item.json.fromE164.replace('+', '') }}",\n  "type": "document",\n  "document": {\n    "id": "{{ $json.id }}",\n    "filename": "{{ $('Split Out1').item.json.descripcion ?? 'archivo' }}"\n  }\n}`,
-          options: {},
-        },
-        type: "n8n-nodes-base.httpRequest",
-        typeVersion: 4.3,
-        position: [7536, 1088],
-        id: "11111111-0041-0041-0041-000000000041",
-        name: "HTTP Request11",
+        name: "HTTP Request Media",
       },
     ],
 
@@ -885,15 +760,7 @@ MUY IMPORTANTE, en el "mensaje" nunca debes incluir links ni urls, NUNCA. Solo d
       "OpenAI Chat Model1":     { ai_languageModel: [[{ node: "Structured Output Parser", type: "ai_languageModel", index: 0 }]] },
       "HTTP Request12":         { main: [[]] },
       "Edit Fields1":           { main: [[{ node: "HTTP Request",    type: "main", index: 0 }]] },
-      "Split Out1":             { main: [[{ node: "Download file",   type: "main", index: 0 }]] },
-      "Download file":          { main: [[{ node: "Switch2",         type: "main", index: 0 }]] },
-      "Switch2": { main: [
-        [{ node: "Edit Image",       type: "main", index: 0 }],
-        [{ node: "HTTP Request10",   type: "main", index: 0 }],
-      ]},
-      "Edit Image":             { main: [[{ node: "HTTP Request5",   type: "main", index: 0 }]] },
-      "HTTP Request5":          { main: [[{ node: "HTTP Request3",   type: "main", index: 0 }]] },
-      "HTTP Request10":         { main: [[{ node: "HTTP Request11",  type: "main", index: 0 }]] },
+      "Split Out1":             { main: [[{ node: "HTTP Request Media", type: "main", index: 0 }]] },
     },
 
     settings: { executionOrder: "v1" },
